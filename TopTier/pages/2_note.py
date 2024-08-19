@@ -2,8 +2,9 @@ import streamlit as st
 
 st.set_page_config(page_title="정리노트", page_icon="📒")
 
+# Initialize session state
 if 'current_page' not in st.session_state:
-    st.session_state.current_page = 'home'
+    st.session_state.current_page = 'note'
 if 'memos' not in st.session_state:
     st.session_state.memos = {}
 if 'categories' not in st.session_state:
@@ -78,14 +79,18 @@ def show_edit_note_page():
         st.warning("해당 카테고리의 메모가 없습니다!")
 
     if st.button("나의 정리노트로 돌아가기"):
-        st.session_state.current_page = 'home'
+        st.session_state.current_page = 'note'
 
 query_params = st.query_params
 if 'edit' in query_params:
     st.session_state.current_category = query_params['edit'][0]
     st.session_state.current_page = 'edit'
+elif 'questions' in query_params:
+    st.session_state.current_page = 'questions'
+else:
+    st.session_state.current_page = 'note'
 
-if st.session_state.current_page == 'home':
+if st.session_state.current_page == 'note':
     show_notes_page()
 elif st.session_state.current_page == 'edit':
     show_edit_note_page()
