@@ -1,75 +1,65 @@
 import streamlit as st
 import plotly.graph_objects as go
-import base64
-import json
-from urllib.parse import quote
 
-# 기술 숙련도 그래프
 def plot_bar_chart(skills):
     labels = list(skills.keys())
     values = list(skills.values())
-    
     fig = go.Figure(data=[go.Bar(x=labels, y=values, marker_color=['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'])])
     fig.update_layout(title='기술 숙련도', xaxis_title='기술', yaxis_title='숙련도 (%)')
     return fig
 
-# 학습 진행 상황 그래프
 def plot_doughnut_chart(learning_progress):
     labels = list(learning_progress.keys())
     sizes = list(learning_progress.values())
-    
     fig = go.Figure(data=[go.Pie(labels=labels, values=sizes, hole=0.3)])
     fig.update_layout(title='학습 진행 상황')
     return fig
 
-# 프로젝트 기여 그래프
 def plot_pie_chart(project_contribution):
     labels = list(project_contribution.keys())
     sizes = list(project_contribution.values())
-    
     fig = go.Figure(data=[go.Pie(labels=labels, values=sizes)])
     fig.update_layout(title='프로젝트 기여')
     return fig
 
-# 포트폴리오 정보 입력 함수
-def get_portfolio_info():
+def get_portfolio_info(existing_info=None):
     st.header("포트폴리오 정보 입력")
     
-    name = st.text_input("이름")
-    intro = st.text_area("자기소개")
-    education = st.text_input("학교 및 전공")
-    expected_graduation = st.text_input("예상 졸업년도")
-    project_experience = st.text_area("프로젝트 경험")
+    name = st.text_input("이름", value=existing_info.get('name', '') if existing_info else '')
+    intro = st.text_area("자기소개", value=existing_info.get('intro', '') if existing_info else '')
+    education = st.text_input("학교 및 전공", value=existing_info.get('education', '') if existing_info else '')
+    expected_graduation = st.text_input("예상 졸업년도", value=existing_info.get('expected_graduation', '') if existing_info else '')
+    project_experience = st.text_area("프로젝트 경험", value=existing_info.get('project_experience', '') if existing_info else '')
     
     skills = {}
     st.subheader("기술 숙련도")
     for i in range(4):
-        skill = st.text_input(f"기술 {i+1}", key=f"skill_{i}")
-        proficiency = st.slider(f"{skill} 숙련도", 0, 100, 50, key=f"proficiency_{i}")
+        skill = st.text_input(f"기술 {i+1}", key=f"skill_{i}", value=list(existing_info.get('skills', {}).keys())[i] if existing_info and i < len(existing_info.get('skills', {})) else '')
+        proficiency = st.slider(f"{skill} 숙련도", 0, 100, list(existing_info.get('skills', {}).values())[i] if existing_info and i < len(existing_info.get('skills', {})) else 50, key=f"proficiency_{i}")
         if skill:
             skills[skill] = proficiency
     
     learning_progress = {}
     st.subheader("학습 진행 상황")
     for i in range(3):
-        topic = st.text_input(f"학습 주제 {i+1}", key=f"topic_{i}")
-        progress = st.number_input(f"{topic} 진행률", 0, 100, 33, key=f"progress_{i}")
+        topic = st.text_input(f"학습 주제 {i+1}", key=f"topic_{i}", value=list(existing_info.get('learning_progress', {}).keys())[i] if existing_info and i < len(existing_info.get('learning_progress', {})) else '')
+        progress = st.number_input(f"{topic} 진행률", 0, 100, list(existing_info.get('learning_progress', {}).values())[i] if existing_info and i < len(existing_info.get('learning_progress', {})) else 33, key=f"progress_{i}")
         if topic:
             learning_progress[topic] = progress
     
     project_contribution = {}
     st.subheader("프로젝트 기여")
     for i in range(4):
-        area = st.text_input(f"기여 영역 {i+1}", key=f"area_{i}")
-        contribution = st.number_input(f"{area} 기여도", 0, 100, 25, key=f"contribution_{i}")
+        area = st.text_input(f"기여 영역 {i+1}", key=f"area_{i}", value=list(existing_info.get('project_contribution', {}).keys())[i] if existing_info and i < len(existing_info.get('project_contribution', {})) else '')
+        contribution = st.number_input(f"{area} 기여도", 0, 100, list(existing_info.get('project_contribution', {}).values())[i] if existing_info and i < len(existing_info.get('project_contribution', {})) else 25, key=f"contribution_{i}")
         if area:
             project_contribution[area] = contribution
     
     contact = {
-        "phone": st.text_input("전화번호", key="contact_phone"),
-        "email": st.text_input("이메일", key="contact_email"),
-        "github": st.text_input("Github 프로필 URL", key="contact_github"),
-        "linkedin": st.text_input("LinkedIn 프로필 URL", key="contact_linkedin")
+        "phone": st.text_input("전화번호", key="contact_phone", value=existing_info.get('contact', {}).get('phone', '') if existing_info else ''),
+        "email": st.text_input("이메일", key="contact_email", value=existing_info.get('contact', {}).get('email', '') if existing_info else ''),
+        "github": st.text_input("Github 프로필 URL", key="contact_github", value=existing_info.get('contact', {}).get('github', '') if existing_info else ''),
+        "linkedin": st.text_input("LinkedIn 프로필 URL", key="contact_linkedin", value=existing_info.get('contact', {}).get('linkedin', '') if existing_info else '')
     }
     
     return {
@@ -84,7 +74,6 @@ def get_portfolio_info():
         "contact": contact
     }
 
-# 포트폴리오 페이지 생성 함수
 def generate_portfolio_page(info):
     st.markdown(f"""
     <div style='background-color: #50b3a2; padding: 20px; text-align: center; color: white;'>
@@ -130,32 +119,25 @@ def generate_portfolio_page(info):
     </div>
     """, unsafe_allow_html=True)
 
-# 메인 함수
-def main():
-    st.set_page_config(page_title="포트폴리오 생성기", layout="wide")  # Move this to the top of the main function
+def show_portfolio_page():
+    st.title("포트폴리오 생성기")
     
-    st.sidebar.title("포트폴리오 생성기")
-    page = st.sidebar.radio("페이지 선택", ["정보 입력", "포트폴리오 보기"])
-    
-    if page == "정보 입력":
-        portfolio_info = get_portfolio_info()
-        if st.button("포트폴리오 생성"):
+    if 'edit_mode' not in st.session_state:
+        st.session_state.edit_mode = False
+
+    if st.session_state.edit_mode or 'portfolio_info' not in st.session_state:
+        existing_info = st.session_state.get('portfolio_info', None)
+        portfolio_info = get_portfolio_info(existing_info)
+        if st.button("포트폴리오 저장"):
             st.session_state.portfolio_info = portfolio_info
-            st.success("포트폴리오가 생성되었습니다!")
-    
-    elif page == "포트폴리오 보기":
-        if 'portfolio_info' in st.session_state:
-            generate_portfolio_page(st.session_state.portfolio_info)
-            
-            # 포트폴리오 URL 생성
-            info_json = json.dumps(st.session_state.portfolio_info)
-            info_base64 = base64.b64encode(info_json.encode()).decode()
-            url = f"https://your-streamlit-app-url.com/?data={quote(info_base64)}"
-            
-            st.markdown(f"### 포트폴리오 공유 URL")
-            st.write(url)
-        else:
-            st.warning("먼저 포트폴리오 정보를 입력해주세요.")
+            st.session_state.edit_mode = False
+            st.success("포트폴리오가 저장되었습니다!")
+            st.rerun()
+    else:
+        generate_portfolio_page(st.session_state.portfolio_info)
+        if st.button("포트폴리오 수정"):
+            st.session_state.edit_mode = True
+            st.rerun()
 
 if __name__ == "__main__":
-    main()
+    show_portfolio_page()

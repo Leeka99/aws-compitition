@@ -99,22 +99,41 @@ def show_edit_note_page():
 
         uploaded_file = st.file_uploader("파일 추가", type=['pdf', 'txt', 'md'])
 
-        if st.button("저장"):
-            if uploaded_file is not None:
-                with open(uploaded_file.name, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
-                st.success("파일이 저장되었습니다!")
+        col1, col2, col3 = st.columns(3)
 
-            st.session_state.memos[category][title] = new_memo
-            st.success("메모가 수정되었습니다!")
-            st.session_state.current_page = 'note'  # 수정 후 돌아가기
-            st.rerun()
+        with col1:
+            if st.button("저장"):
+                if uploaded_file is not None:
+                    with open(uploaded_file.name, "wb") as f:
+                        f.write(uploaded_file.getbuffer())
+                    st.success("파일이 저장되었습니다!")
+
+                st.session_state.memos[category][title] = new_memo
+                st.success("메모가 수정되었습니다!")
+                st.session_state.current_page = 'note'  # 수정 후 돌아가기
+                st.rerun()
+
+        with col2:
+            if st.button("삭제"):
+                if st.session_state.memos[category]:
+                    del st.session_state.memos[category][title]
+                    if not st.session_state.memos[category]:  # 카테고리가 비어있다면 삭제
+                        del st.session_state.memos[category]
+                        st.session_state.categories.remove(category)
+                    st.success("메모가 삭제되었습니다!")
+                    st.session_state.current_page = 'note'  # 삭제 후 돌아가기
+                    st.rerun()
+
+        with col3:
+            if st.button("나의 정리노트로 돌아가기"):
+                st.session_state.current_page = 'note'
+                st.rerun()
+
     else:
         st.warning("해당 카테고리의 메모가 없습니다!")
-
-    if st.button("나의 정리노트로 돌아가기"):
-        st.session_state.current_page = 'note'
-        st.rerun()
+        if st.button("나의 정리노트로 돌아가기"):
+            st.session_state.current_page = 'note'
+            st.rerun()
 
 # Main page rendering logic
 if st.session_state.current_page == 'note':

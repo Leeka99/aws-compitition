@@ -71,20 +71,31 @@ def provide_feedback(question, user_answer):
         instruction = f"Human: 다음 질문과 사용자의 답변에 대해 자세하고 친절한 피드백을 제공해 주세요.\n\n질문: {question}\n\n사용자의 답변: {user_answer}\n\nAssistant: 네, 이해했습니다. 질문과 사용자의 답변을 바탕으로 피드백을 제공해 드리겠습니다.\n\n"
         
         body = json.dumps({
-            "prompt": instruction,
-            "max_tokens_to_sample": 300,
-            "temperature": 0.7,
-            "top_p": 0.9,
-            "stop_sequences": ["\n\nHuman:"]
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 1000,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": instruction
+                }
+            ]
         })
         
-        response = bedrock_runtime.invoke_model(
-            modelId="anthropic.claude-v2",
+        response = bedrock_runtime.invoke_model_with_response_stream(
+            modelId="anthropic.claude-3-sonnet-20240229-v1:0",
             body=body
         )
         
-        response_body = json.loads(response.get('body').read())
-        return response_body.get('completion', '').strip()
+        stream = response.get("body")
+        feedback = ""
+        if stream:
+            for event in stream:
+                chunk = event.get("chunk")
+                if chunk:
+                    chunk_json = json.loads(chunk.get("bytes").decode())
+                    feedback += chunk_json.get("delta", {}).get("text", "")
+        
+        return feedback.strip()
         
     except Exception as e:
         st.error(f"피드백 생성에 실패했습니다: {str(e)}")
@@ -124,7 +135,8 @@ def show_ai_question_generator():
                     with st.spinner("피드백 생성 중..."):
                         feedback = provide_feedback(st.session_state.generated_question, st.session_state.user_answer)
                         if feedback:
-                            st.write(f"**피드백:** {feedback}")
+                            st.markdown("**피드백:**")
+                            st.markdown(feedback)
     else:
         st.warning("저장된 메모가 없습니다. 먼저 메모를 작성해주세요.")
 
