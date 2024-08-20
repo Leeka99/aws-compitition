@@ -37,6 +37,7 @@ def show_notes_page():
             for title, memo in memo_items.items():
                 short_title = title[:10] + ('...' if len(title) > 10 else '')
                 with columns[col_index]:
+                    # Display memo item
                     st.markdown(f"""
                     <div style="padding: 10px; border: 1px solid #FF6F61; border-radius: 8px; margin-bottom: 10px; background-color: #f9f9f9; width: 150px; height: 150px; display: flex; flex-direction: column; justify-content: space-between;">
                         <div style="font-size:14px; font-weight:bold; padding-bottom: 5px; border-bottom: 2px solid #FF6F61; color: black; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
@@ -45,27 +46,58 @@ def show_notes_page():
                         <div style="padding-top: 5px; font-size:12px; color: black; flex-grow: 1; overflow: hidden; text-overflow: ellipsis;">
                             {memo[:50]}{'...' if len(memo) > 50 else ''}
                         </div>
-                        <div style="margin-top: 5px; text-align: right;">
-                            <a href="/?edit={selected_category},{title}" style="text-decoration: none; color: #FF6F61; font-weight: bold; font-size:12px;">수정하기</a>
-                        </div>
                     </div>
                     """, unsafe_allow_html=True)
-
-                col_index = (col_index + 1) % 4
+                    
+                    # Define a unique key for each button
+                    button_key = f"edit_{title}"
+                    if st.button("수정하러가기⚙️", key=button_key):
+                        st.session_state.current_title = title
+                        st.session_state.current_page = 'edit'
+                        st.rerun()
+                    
+                    col_index = (col_index + 1) % 4
         else:
             st.warning("이 카테고리에는 메모가 없습니다.")
     else:
         st.warning("선택된 항목이 없습니다.")
 
+def show_view_note_page():
+    category = st.session_state.current_category
+    title = st.session_state.current_title
+    st.title(f"보기: {category} - {title}")
+
+    if category in st.session_state.memos and title in st.session_state.memos[category]:
+        memo = st.session_state.memos[category][title]
+        st.markdown(f"""
+        <div style="padding: 10px; border: 1px solid #FF6F61; border-radius: 8px; margin-bottom: 10px; background-color: #f9f9f9;">
+            <div style="font-size:16px; font-weight:bold; padding-bottom: 5px; border-bottom: 2px solid #FF6F61; color: black;">
+                {title}
+            </div>
+            <div style="padding-top: 10px; font-size:14px; color: black;">
+                {memo}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("수정하기"):
+            st.session_state.current_page = 'edit'
+            st.rerun()
+
+    if st.button("나의 정리노트로 돌아가기"):
+        st.session_state.current_page = 'note'
+        st.rerun()
+
 def show_edit_note_page():
-    category, title = st.session_state.current_category.split(',', 1)
+    category = st.session_state.current_category
+    title = st.session_state.current_title
     st.title(f"편집: {category} - {title}")
 
     if category in st.session_state.memos and title in st.session_state.memos[category]:
         memo = st.session_state.memos[category][title]
-        new_memo = st.text_area("내용", value=memo)
+        new_memo = st.text_area("내용", value=memo, height=300)  # 긴 메모를 위한 높이 설정
 
-        uploaded_file = st.file_uploader("파일 추가")
+        uploaded_file = st.file_uploader("파일 추가", type=['pdf', 'txt', 'md'])
 
         if st.button("저장"):
             if uploaded_file is not None:
@@ -75,22 +107,19 @@ def show_edit_note_page():
 
             st.session_state.memos[category][title] = new_memo
             st.success("메모가 수정되었습니다!")
+            st.session_state.current_page = 'note'  # 수정 후 돌아가기
+            st.rerun()
     else:
         st.warning("해당 카테고리의 메모가 없습니다!")
 
     if st.button("나의 정리노트로 돌아가기"):
         st.session_state.current_page = 'note'
+        st.rerun()
 
-query_params = st.query_params
-if 'edit' in query_params:
-    st.session_state.current_category = query_params['edit'][0]
-    st.session_state.current_page = 'edit'
-elif 'questions' in query_params:
-    st.session_state.current_page = 'questions'
-else:
-    st.session_state.current_page = 'note'
-
+# Main page rendering logic
 if st.session_state.current_page == 'note':
     show_notes_page()
+elif st.session_state.current_page == 'view':
+    show_view_note_page()
 elif st.session_state.current_page == 'edit':
     show_edit_note_page()
