@@ -11,34 +11,28 @@ def login_page():
         if username == "wku" and password == "1234":
             st.session_state.logged_in = True
             st.success("로그인 성공!")
-            st.query_params(logged_in=True)  # 쿼리 매개변수 설정
-            st.write('<meta http-equiv="refresh" content="0; url=/main">', unsafe_allow_html=True) ## 추가가
-
+            # 쿼리 매개변수를 설정하는 대신 세션 상태만 업데이트
+            st.rerun()
         else:
             st.error("사용자 이름 또는 비밀번호가 올바르지 않습니다.")
 
 # 로그인 상태 초기화
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
-if 'redirect_to_main' not in st.session_state:  ## 추가가
-    st.session_state.redirect_to_main = False  ## 추가
 
-
-# 쿼리 매개변수 확인
-query_params = st.query_params
-if 'logged_in' in query_params and query_params['logged_in'][0] == 'True':
-    st.session_state.logged_in = True
+# 쿼리 매개변수 확인 (필요한 경우)
+if 'logged_in' in st.query_params:
+    if st.query_params['logged_in'] == 'true':
+        st.session_state.logged_in = True
 
 # 로그인 상태 검사
 if not st.session_state.logged_in:
     login_page()
-    st.stop()  # 로그인되지 않은 경우 이후 코드 실행 중지
-
-# 페이지 렌더링  ## 추가
-if st.session_state.logged_in and st.session_state.redirect_to_main:
-    # HTML 메타 태그를 사용하여 페이지를 리디렉션합니다.
-    st.write('<meta http-equiv="refresh" content="0; url=/main">', unsafe_allow_html=True)
 else:
-    login_page()
+    st.success("로그인 성공! ")
 
-    
+# 로그아웃 기능 (선택적)
+if st.session_state.logged_in:
+    if st.button("로그아웃"):
+        st.session_state.logged_in = False
+        st.rerun()
